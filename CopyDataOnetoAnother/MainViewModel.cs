@@ -3,8 +3,8 @@ using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace CopyDataOnetoAnother;
@@ -71,48 +71,73 @@ public class MainViewModel:INotifyPropertyChanged
         FromFile=new(executeFromFile);
 		ToFile=new(executeToFile);
 		SuspendCommand=new(executeSuspend);
-		CopyCommand=new(executeCopy);
+		ResumeCommand=new(executeResume);
+		CopyCommand =new(executeCopy);
+		AbortCommand=new(executeAbort);
+		_suspendEvent =new ManualResetEvent(true);
 	}
+
+	private void executeAbort(object obj)
+	{
+		cancellationTokenSource.Cancel();
+	}
+
+	private void executeResume(object obj)
+	{
+		_suspendEvent.Set();
+	}
+
+	private ManualResetEvent _suspendEvent;
+	private Thread thread;
+	private CancellationTokenSource cancellationTokenSource;
 
 	private void executeSuspend(object obj)
 	{
-		
+		_suspendEvent.Reset();	
 	}
 
-	private void copyContent(string sourceFilePath,string destinationFilePath,IProgress<int> progress)
+	private void copyContent(string sourceFilePath,string destinationFilePath,IProgress<int> progress,CancellationToken cancellationToken)
 	{
-		using(FileStream sourceStream=new(sourceFilePath, FileMode.Open, FileAccess.Read))
-		 using(FileStream destinationStream=new(destinationFilePath, FileMode.Open, FileAccess.Write))
+		try
 		{
-			int byteRead;
-			long totalBytes=sourceFilePath.Length;
-
-			long bytesCopy = 0;
-			while ((byteRead = sourceStream.ReadByte())!=-1)
+			using (FileStream sourceStream = new(sourceFilePath, FileMode.Open, FileAccess.Read))
+			using (FileStream destinationStream = new(destinationFilePath, FileMode.Open, FileAccess.Write))
 			{
+				int byteRead;
+				long totalBytes = sourceFilePath.Length;
 
-				bytesCopy++;
-				destinationStream.WriteByte((byte)byteRead);
-				int percentComplete=(int)((bytesCopy * 100)/totalBytes);
-				progress.Report(percentComplete);
-				Thread.Sleep(100);
+				long bytesCopy = 0;
+				while ((byteRead = sourceStream.ReadByte())!=-1)
+				{
+					cancellationToken.ThrowIfCancellationRequested();
+
+					_suspendEvent.WaitOne();
+
+					bytesCopy++;
+					destinationStream.WriteByte((byte)byteRead);
+					int percentComplete = (int)((bytesCopy * 100)/totalBytes);
+					progress.Report(percentComplete);
+					Thread.Sleep(100);
+				}
+
+
 			}
-			
-
 		}
-
+		catch(Exception ex) 
+		{
+			MessageBox.Show($"ERROR!:{ex.Message}");
+		}
 	}
 
 	private void executeCopy(object obj)
 	{
+		cancellationTokenSource=new();
 		var progressIndigator=new Progress<int>(value=>ProgressValue=value);
 
-		var thread = new Thread(() =>copyContent(fromText, toText, progressIndigator));
-		thread.Start();
-		Thread.Sleep(5000);
-		
-	
+		thread = new Thread(() =>copyContent(fromText, toText, progressIndigator, cancellationTokenSource.Token));
 
+		thread.Start();
+		
 	}
 
 	private void executeToFile(object obj)
