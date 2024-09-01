@@ -1,0 +1,33 @@
+﻿<Window x:Class="CopyDataOnetoAnother.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CopyDataOnetoAnother"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="200" Width="530">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Margin="10" Width="100" TextAlignment="Center" VerticalAlignment="Center">From</TextBlock>
+            <TextBox Width="250" Margin="10"  Height="30"  Text="{Binding FromText}" ></TextBox>
+            <Button  Width="100" VerticalAlignment="Center" FontWeight="Bold" Command="{Binding FromFile}"  CommandParameter="C:\">File...</Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <TextBlock Margin="10" Width="100" TextAlignment="Center" VerticalAlignment="Center"> To</TextBlock>
+            <TextBox Width="250" Margin="10" Height="30" Text="{Binding ToText}"></TextBox>
+            <Button  Width="100" VerticalAlignment="Center" FontWeight="Bold" Command="{Binding ToFile}">File...</Button>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <ProgressBar Margin="10" Width="200" Height="30" Value="{Binding ProgressValue,UpdateSourceTrigger=PropertyChanged}" Minimum="0" Maximum="100"></ProgressBar>
+            <Button  Width="70" VerticalAlignment="Center" Margin="0,0,5,0" Command="{Binding SuspendCommand}" >Suspend</Button>
+            <Button Width="70" VerticalAlignment="Center" Margin="0,0,5,0"  Command="{Binding ResumeCommand}">Resume</Button>
+            <Button  Width="70" VerticalAlignment="Center" Margin="0,0,5,0" Command="{Binding AbortCommand}">Abort</Button>
+            <Button Width="70" VerticalAlignment="Center" Margin="0,0,5,0"  Command="{Binding CopyCommand}" FontWeight="Bold">Copy</Button>
+        </StackPanel>
+    </Grid>
+</Window>
